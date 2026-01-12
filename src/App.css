@@ -27,6 +27,15 @@ body {
   text-align: center;
 }
 
+.content {
+  width: 100%;
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
 header h1 {
   font-size: 2.2rem;
   margin-bottom: 8px;
@@ -45,6 +54,137 @@ header p {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.editor {
+  flex: 1;
+  min-width: 240px;
+  max-width: 320px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.08);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  transition: width 0.25s ease, height 0.25s ease, padding 0.25s ease, border-radius 0.25s ease,
+    box-shadow 0.25s ease;
+  overflow: hidden;
+}
+
+.editor-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transform-origin: top right;
+  transition: transform 0.3s ease, opacity 0.2s ease;
+}
+
+.editor.collapsed {
+  width: 20px;
+  min-width: 20px;
+  max-width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: 10px;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+}
+
+.editor.collapsed .editor-content {
+  transform: scale(0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.collapse-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: #1d1d1f;
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.editor.collapsed .collapse-button {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.editor h2 {
+  font-size: 1.2rem;
+}
+
+.editor p {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.editor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.editor-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.editor-row input {
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  font-size: 0.9rem;
+}
+
+.editor-row button {
+  border: none;
+  background: #f0f0f5;
+  color: #444;
+  border-radius: 12px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.editor-row button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.add-button {
+  border: none;
+  background: #2d6cdf;
+  color: #fff;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.add-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .wheel {
@@ -117,4 +257,15 @@ header p {
   border-radius: 16px;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
   min-width: 240px;
+}
+
+@media (max-width: 768px) {
+  .content {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .editor {
+    width: min(360px, 90vw);
+  }
 }

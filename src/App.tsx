@@ -1,6 +1,6 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-const options = ["寿司", "焼肉", "ラーメン", "カレー", "パスタ", "ピザ", "餃子", "サラダ"];
+const initialOptions = ["寿司", "焼肉", "ラーメン", "カレー", "パスタ", "ピザ", "餃子", "サラダ"];
 
 const spinDurationMs = 5200;
 const minSpins = 5;
@@ -13,10 +13,17 @@ export default function App() {
   const [rotation, setRotation] = useState(0);
   const [result, setResult] = useState<string | null>(null);
   const [isSpinning, setIsSpinning] = useState(false);
+  const [options, setOptions] = useState(initialOptions);
+  const [isEditorCollapsed, setIsEditorCollapsed] = useState(false);
   const animationRef = useRef<number | null>(null);
   const rotationRef = useRef(0);
 
-  const segmentAngle = 360 / options.length;
+  const displayOptions = useMemo(
+    () => options.map((option, index) => option.trim() || `項目${index + 1}`),
+    [options]
+  );
+
+  const segmentAngle = displayOptions.length > 0 ? 360 / displayOptions.length : 0;
 
   const gradient = useMemo(() => {
     const colors = [
@@ -29,23 +36,27 @@ export default function App() {
       "#c77dff",
       "#ff9bd1",
     ];
-    const slices = options.map((_, index) => {
+    const slices = displayOptions.map((_, index) => {
       const start = index * segmentAngle;
       const end = start + segmentAngle;
       const color = colors[index % colors.length];
       return `${color} ${start}deg ${end}deg`;
     });
     return `conic-gradient(${slices.join(", ")})`;
-  }, [segmentAngle]);
+  }, [displayOptions, segmentAngle]);
 
   const labels = useMemo(
     () =>
-      options.map((label, index) => {
+      displayOptions.map((label, index) => {
         const angle = index * segmentAngle + segmentAngle / 2;
         return { label, angle };
       }),
-    [segmentAngle]
+    [displayOptions, segmentAngle]
   );
+
+  useEffect(() => {
+    setResult(null);
+  }, [displayOptions]);
 
   const stopAnimation = () => {
     if (animationRef.current !== null) {
@@ -56,12 +67,13 @@ export default function App() {
 
   const calculateResult = (finalRotation: number) => {
     const normalized = (pointerAngle - (finalRotation % 360) + 360) % 360;
-    const index = Math.floor(normalized / segmentAngle) % options.length;
-    return options[index];
+    if (segmentAngle === 0) return "";
+    const index = Math.floor(normalized / segmentAngle) % displayOptions.length;
+    return displayOptions[index];
   };
 
   const spin = () => {
-    if (isSpinning) return;
+    if (isSpinning || displayOptions.length < 2) return;
     setIsSpinning(true);
     setResult(null);
 
@@ -101,27 +113,79 @@ export default function App() {
         <p>ボタンを押すと、慣性のあるルーレットが回転します。</p>
       </header>
 
-      <div className="wheel-area">
-        <div className="pointer" aria-hidden="true" />
-        <div
-          className="wheel"
-          style={{
-            background: gradient,
-            transform: `rotate(${rotation}deg)`,
-          }}
-        >
-          {labels.map(({ label, angle }) => (
-            <div
-              key={label}
-              className="wheel-label"
-              style={{
-                transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(calc(var(--wheel-size) * -0.36))`,
-              }}
-            >
-              <span style={{ transform: "rotate(-90deg)" }}>{label}</span>
-            </div>
-          ))}
+      <div className="content">
+        <div className="wheel-area">
+          <div className="pointer" aria-hidden="true" />
+          <div
+            className="wheel"
+            style={{
+              background: gradient,
+              transform: `rotate(${rotation}deg)`,
+            }}
+          >
+            {labels.map(({ label, angle }, index) => (
+              <div
+                key={`${label}-${index}`}
+                className="wheel-label"
+                style={{
+                  transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(calc(var(--wheel-size) * -0.36))`,
+                }}
+              >
+                <span style={{ transform: "rotate(-90deg)" }}>{label}</span>
+              </div>
+            ))}
+          </div>
         </div>
+
+        <section className={isEditorCollapsed ? "editor collapsed" : "editor"}>
+          <button
+            type="button"
+            className="collapse-button"
+            onClick={() => setIsEditorCollapsed((prev) => !prev)}
+            aria-label={isEditorCollapsed ? "項目編集を開く" : "項目編集を閉じる"}
+          >
+            {isEditorCollapsed ? "+" : "−"}
+          </button>
+          <div className="editor-content">
+            <h2>項目編集</h2>
+            <p>ルーレットの項目を自由に編集できます。</p>
+            <div className="editor-list">
+              {options.map((option, index) => (
+                <div key={`option-${index}`} className="editor-row">
+                  <input
+                    type="text"
+                    value={option}
+                    onChange={(event) => {
+                      const next = [...options];
+                      next[index] = event.target.value;
+                      setOptions(next);
+                    }}
+                    placeholder={`項目${index + 1}`}
+                    disabled={isSpinning}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (options.length <= 2) return;
+                      setOptions(options.filter((_, optionIndex) => optionIndex !== index));
+                    }}
+                    disabled={isSpinning || options.length <= 2}
+                  >
+                    削除
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="add-button"
+              onClick={() => setOptions([...options, ""])}
+              disabled={isSpinning}
+            >
+              追加
+            </button>
+          </div>
+        </section>
       </div>
 
       <button type="button" className="spin-button" onClick={spin} disabled={isSpinning}>
@@ -129,7 +193,11 @@ export default function App() {
       </button>
 
       <div className="result" aria-live="polite">
-        {result ? `結果: ${result}` : "結果はここに表示されます。"}
+        {displayOptions.length < 2
+          ? "項目を2つ以上入力してください。"
+          : result
+            ? `結果: ${result}`
+            : "結果はここに表示されます。"}
       </div>
     </div>
   );
